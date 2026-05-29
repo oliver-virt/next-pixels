@@ -16,6 +16,37 @@ Under-reported conversions don't just dent your dashboards — they starve the a
 
 **The fix the platforms recommend.** Send each event **twice**: once from the browser (pixel) and once from your server (Meta Conversions API / TikTok Events API). The server call runs even when the browser one is blocked, and carries hashed first-party data (email, phone) for stronger matching. To avoid counting the same conversion twice, both hits share one **event ID** that the platform deduplicates on.
 
+```mermaid
+flowchart LR
+    C["🛒 User converts"]
+
+    subgraph browseronly ["Browser pixel only"]
+        direction TB
+        PX["Browser pixel"] -->|"blocked: ad blocker, iOS/ITP, tab close"| LOST["❌ conversion lost"]
+        PX -->|"otherwise"| AD1["Ad platform"]
+    end
+
+    subgraph dual ["next-pixels: pixel + server"]
+        direction TB
+        PX2["Browser pixel"] --> AD2["Ad platform"]
+        SRV["Your server → Conversions / Events API"] --> AD2
+        AD2 --> DEDUP["✅ same event_id → counted once"]
+    end
+
+    C --> PX
+    C --> PX2
+    C --> SRV
+```
+
+The server path has no script to block, so the conversion still lands even when the browser pixel doesn't.
+
+| | Browser pixel only | next-pixels (pixel + server) |
+|---|---|---|
+| Client blocked (ad blocker / ITP) | ❌ conversion lost | ✅ server still reports it |
+| Match quality | cookie only | cookie **+** hashed email/phone |
+| Double-counting | — | ✅ deduped by shared `event_id` |
+| Adding Meta **and** TikTok | wire each by hand, twice | one `track()` call |
+
 **Why a package.** Wiring that up correctly is fiddly and easy to get subtly wrong — generating and threading a shared ID, hashing PII the way each platform expects (Meta wants digits-only phones, TikTok wants E.164), mapping event names across platforms (`Purchase` ↔ `CompletePayment`), and repeating all of it per provider. `next-pixels` collapses it into a single `track()` call that fans out to every configured provider on both client and server, deduped — so you write the event once and get reliable attribution everywhere.
 
 ## Features
@@ -112,6 +143,26 @@ When you call `track()`:
    - Meta Conversions API (`event_id`)
    - TikTok Events API (`event_id`)
 4. Each platform matches its client + server events by id and counts them once.
+
+```mermaid
+flowchart TD
+    T["track({ eventName: 'Purchase' })"] --> ID["Generate one event_id (UUID)"]
+
+    ID --> FBC["fbq('track','Purchase')"]
+    ID --> TTC["ttq.track('CompletePayment')"]
+    ID --> POST["POST /api/events"]
+
+    POST --> FBS["Meta Conversions API"]
+    POST --> TTS["TikTok Events API"]
+
+    FBC --> FB(("Meta"))
+    FBS --> FB
+    TTC --> TT(("TikTok"))
+    TTS --> TT
+
+    FB --> FBD["dedup by event_id ✅"]
+    TT --> TTD["dedup by event_id ✅"]
+```
 
 The event-name map (`Purchase` → `CompletePayment`, `Lead` → `SubmitForm`, etc.) is applied automatically. Override per call with `tiktokEventName`, or read/extend the map via the exported `META_TO_TIKTOK_EVENTS` / `toTikTokEventName`.
 
