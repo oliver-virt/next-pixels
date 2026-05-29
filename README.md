@@ -4,6 +4,20 @@ Facebook **and TikTok** Pixel + server-side Conversions / Events API for Next.js
 
 One `track()` call fires both the browser pixel and the server API for every configured provider, with automatic deduplication, PII hashing, and TypeScript support.
 
+## Why this exists
+
+**The problem.** A browser pixel alone (`fbq`, `ttq`) misses a large and growing share of conversions:
+
+- **Ad blockers & tracking protection** drop the pixel script entirely — often 10–30% of traffic.
+- **Safari/iOS (ITP)** cap first-party cookie lifetime to ~7 days, so returning users look brand new and attribution breaks.
+- **Network flakiness, early tab-close, and CSP** mean client beacons silently never arrive.
+
+Under-reported conversions don't just dent your dashboards — they starve the ad platforms' optimization models, so you pay more for worse targeting.
+
+**The fix the platforms recommend.** Send each event **twice**: once from the browser (pixel) and once from your server (Meta Conversions API / TikTok Events API). The server call runs even when the browser one is blocked, and carries hashed first-party data (email, phone) for stronger matching. To avoid counting the same conversion twice, both hits share one **event ID** that the platform deduplicates on.
+
+**Why a package.** Wiring that up correctly is fiddly and easy to get subtly wrong — generating and threading a shared ID, hashing PII the way each platform expects (Meta wants digits-only phones, TikTok wants E.164), mapping event names across platforms (`Purchase` ↔ `CompletePayment`), and repeating all of it per provider. `next-pixels` collapses it into a single `track()` call that fans out to every configured provider on both client and server, deduped — so you write the event once and get reliable attribution everywhere.
+
 ## Features
 
 - **Multi-provider** — Meta (Facebook) and TikTok from a single `track()` call
