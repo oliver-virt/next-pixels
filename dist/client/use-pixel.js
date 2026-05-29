@@ -1,6 +1,6 @@
 "use client";
 import { useCallback } from "react";
-import { fbEvent } from "./fb-event.js";
+import { track as trackEvent } from "./track.js";
 /**
  * React hook for tracking Facebook Pixel + CAPI events.
  *
@@ -25,7 +25,7 @@ import { fbEvent } from "./fb-event.js";
 export function usePixel() {
     const track = useCallback((options) => {
         try {
-            fbEvent(options);
+            trackEvent(options);
         }
         catch (error) {
             console.error("[next-meta-pixel] Failed to track event:", error);

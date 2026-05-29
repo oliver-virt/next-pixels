@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { trackPageView } from "./fb-pixel-client.js";
+import { trackTikTokPageView } from "./tt-pixel-client.js";
 
 function PixelPageViewContent() {
   const pathname = usePathname();
@@ -10,16 +11,17 @@ function PixelPageViewContent() {
 
   useEffect(() => {
     trackPageView(pathname, searchParams);
+    trackTikTokPageView();
   }, [pathname, searchParams]);
 
   return null;
 }
 
 /**
- * Tracks PageView events on every route change.
+ * Tracks PageView events on every route change, across all configured providers.
  *
- * Add this alongside `<FacebookPixel />` in your layout.
- * Wrapped in Suspense to avoid hydration issues with `useSearchParams`.
+ * Add this alongside `<Pixel />` (or `<FacebookPixel />` / `<TikTokPixel />`) in
+ * your layout. Wrapped in Suspense to avoid hydration issues with `useSearchParams`.
  *
  * @example
  * ```tsx

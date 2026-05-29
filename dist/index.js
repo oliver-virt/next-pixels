@@ -1,8 +1,13 @@
 // Components
+export { Pixel } from "./client/Pixel.js";
 export { FacebookPixel } from "./client/FacebookPixel.js";
+export { TikTokPixel } from "./client/TikTokPixel.js";
 export { PixelPageView } from "./client/PixelPageView.js";
 // Client tracking
-export { fbEvent } from "./client/fb-event.js";
+export { track, fbEvent } from "./client/track.js";
 export { usePixel } from "./client/use-pixel.js";
 export { trackPageView, trackStandardEvent, trackCustomEvent, isPixelInitialized, FB_PIXEL_ID, } from "./client/fb-pixel-client.js";
+export { trackTikTokEvent, trackTikTokPageView, isTikTokInitialized, TIKTOK_PIXEL_ID, } from "./client/tt-pixel-client.js";
+// Event name mapping
+export { META_TO_TIKTOK_EVENTS, toTikTokEventName } from "./event-map.js";
 //# sourceMappingURL=index.js.map

@@ -16,6 +16,13 @@ export function getFbcCookie(): string | null {
   return match ? match[1] : null;
 }
 
+/** Get the TikTok Pixel (_ttp) cookie */
+export function getTtpCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/_ttp=([^;]+)/);
+  return match ? match[1] : null;
+}
+
 /** Generate a dev-only fallback _fbp cookie */
 function generateDevFbpCookie(): string {
   return `fb.1.${Date.now()}.1234567890`;
@@ -53,4 +60,17 @@ export function getFbCookies(): { fbp: string | null; fbc: string | null } {
     fbp: getFbpCookie(),
     fbc: getFbcCookie(),
   };
+}
+
+/**
+ * Get all attribution cookies across providers: _fbp, _fbc (Meta) and _ttp (TikTok).
+ * In development, Meta cookies fall back to generated values via {@link getFbCookies}.
+ */
+export function getMatchCookies(): {
+  fbp: string | null;
+  fbc: string | null;
+  ttp: string | null;
+} {
+  const { fbp, fbc } = getFbCookies();
+  return { fbp, fbc, ttp: getTtpCookie() };
 }

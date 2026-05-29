@@ -4,24 +4,17 @@ import type {
   FacebookCustomData,
   FacebookEventPayload,
 } from "../types.js";
+import { hashData, digitsOnly } from "../utils/hash.js";
 import { sendServerEventDev, isDevMode } from "./dev-capi-service.js";
+import {
+  sendTikTokServerEvent,
+  isTikTokConfigured,
+} from "./tiktok-events-service.js";
 
 const FACEBOOK_API_VERSION = "v21.0";
 const FACEBOOK_API_BASE_URL = "https://graph.facebook.com";
 
 // --- Data transformation ---
-
-async function hashData(data: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const bytes = encoder.encode(data.toLowerCase().trim());
-  const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function formatPhoneNumber(phone: string): string {
-  return phone.replace(/[^0-9]/g, "");
-}
 
 async function transformUserData(data: FacebookEventData): Promise<FacebookUserData> {
   const userData: FacebookUserData = {};
@@ -31,7 +24,7 @@ async function transformUserData(data: FacebookEventData): Promise<FacebookUserD
   }
   if (data.phones?.length) {
     userData.ph = await Promise.all(
-      data.phones.map((phone) => hashData(formatPhoneNumber(phone)))
+      data.phones.map((phone) => hashData(digitsOnly(phone)))
     );
   }
   if (data.firstName) userData.fn = await hashData(data.firstName);
@@ -107,7 +100,12 @@ async function createEventPayload(data: FacebookEventData): Promise<FacebookEven
   };
 }
 
-// --- Main export ---
+// --- Meta (Facebook) Conversions API ---
+
+/** True when the Meta provider is configured (Pixel ID present). */
+export function isMetaConfigured(): boolean {
+  return !!process.env.NEXT_PUBLIC_FB_PIXEL_ID;
+}
 
 /**
  * Send an event to Facebook's Conversions API (server-side).
@@ -117,7 +115,7 @@ async function createEventPayload(data: FacebookEventData): Promise<FacebookEven
  *
  * Required env vars: `FB_PIXEL_ACCESS_TOKEN`, `NEXT_PUBLIC_FB_PIXEL_ID`
  */
-export async function sendServerEvent(eventData: FacebookEventData) {
+export async function sendMetaServerEvent(eventData: FacebookEventData) {
   if (isDevMode()) {
     return sendServerEventDev(eventData);
   }
@@ -167,4 +165,60 @@ export async function sendServerEvent(eventData: FacebookEventData) {
   }
 
   return result;
+}
+
+// --- Unified dispatcher ---
+
+/** Per-provider result of a unified {@link sendServerEvent} call. */
+export interface ServerEventResult {
+  meta?: { ok: boolean; result?: unknown; error?: string };
+  tiktok?: { ok: boolean; result?: unknown; error?: string };
+}
+
+/**
+ * Send an event to every configured provider's server API (Meta CAPI +
+ * TikTok Events API). A provider runs when its public pixel-id env var is set;
+ * if none is set, Meta is assumed for backward compatibility.
+ *
+ * Failures are isolated per provider — one provider erroring does not prevent
+ * the other from sending. The returned object reports each provider's outcome.
+ */
+export async function sendServerEvent(
+  eventData: FacebookEventData
+): Promise<ServerEventResult> {
+  const providers: Array<{
+    key: keyof ServerEventResult;
+    run: () => Promise<unknown>;
+  }> = [];
+
+  const metaOn = isMetaConfigured();
+  const tiktokOn = isTikTokConfigured();
+
+  // Backward compat: with no provider env configured, default to Meta.
+  if (metaOn || (!metaOn && !tiktokOn)) {
+    providers.push({ key: "meta", run: () => sendMetaServerEvent(eventData) });
+  }
+  if (tiktokOn) {
+    providers.push({
+      key: "tiktok",
+      run: () => sendTikTokServerEvent(eventData),
+    });
+  }
+
+  const settled = await Promise.allSettled(providers.map((p) => p.run()));
+
+  const out: ServerEventResult = {};
+  settled.forEach((res, i) => {
+    const key = providers[i].key;
+    if (res.status === "fulfilled") {
+      out[key] = { ok: true, result: res.value };
+    } else {
+      const message =
+        res.reason instanceof Error ? res.reason.message : String(res.reason);
+      console.error(`[next-meta-pixel] ${key} server event failed:`, message);
+      out[key] = { ok: false, error: message };
+    }
+  });
+
+  return out;
 }

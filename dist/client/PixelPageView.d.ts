@@ -1,8 +1,8 @@
 /**
- * Tracks PageView events on every route change.
+ * Tracks PageView events on every route change, across all configured providers.
  *
- * Add this alongside `<FacebookPixel />` in your layout.
- * Wrapped in Suspense to avoid hydration issues with `useSearchParams`.
+ * Add this alongside `<Pixel />` (or `<FacebookPixel />` / `<TikTokPixel />`) in
+ * your layout. Wrapped in Suspense to avoid hydration issues with `useSearchParams`.
  *
  * @example
  * ```tsx

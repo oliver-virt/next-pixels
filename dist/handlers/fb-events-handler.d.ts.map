@@ -1,1 +1,1 @@
-{"version":3,"file":"fb-events-handler.d.ts","sourceRoot":"","sources":["../../src/handlers/fb-events-handler.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,aAAa,CAAC;AAC/C,OAAO,EAAE,YAAY,EAAE,MAAM,aAAa,CAAC;AAI3C;;;;;;;;;;;;GAYG;AACH,wBAAsB,eAAe,CAAC,GAAG,EAAE,WAAW;;;;;;;;IA4BrD"}
+{"version":3,"file":"fb-events-handler.d.ts","sourceRoot":"","sources":["../../src/handlers/fb-events-handler.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,OAAO,EAAE,aAAa,EAAE,aAAa,IAAI,eAAe,EAAE,MAAM,qBAAqB,CAAC"}

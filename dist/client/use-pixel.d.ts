@@ -1,4 +1,4 @@
-import type { FbEventOptions } from "../types.js";
+import type { TrackOptions } from "../types.js";
 /**
  * React hook for tracking Facebook Pixel + CAPI events.
  *
@@ -21,6 +21,6 @@ import type { FbEventOptions } from "../types.js";
  * ```
  */
 export declare function usePixel(): {
-    track: (options: FbEventOptions) => void;
+    track: (options: TrackOptions) => void;
 };
 //# sourceMappingURL=use-pixel.d.ts.map
