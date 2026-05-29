@@ -2,7 +2,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 
 export function logPixelEvent(
   event: string,
-  data?: Record<string, any>,
+  data?: Record<string, unknown>,
   source: "client" | "server" = "client"
 ) {
   if (isDevelopment) {
@@ -12,7 +12,7 @@ export function logPixelEvent(
 
 export function logPixelError(
   message: string,
-  error?: any,
+  error?: unknown,
   source: "client" | "server" = "client"
 ) {
   if (isDevelopment) {

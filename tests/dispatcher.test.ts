@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { sendServerEvent } from "../dist/server/capi-service.js";
+import type { FacebookEventData } from "../dist/types.js";
 
 const META_URL = "graph.facebook.com";
 const TIKTOK_URL = "business-api.tiktok.com";
@@ -23,11 +24,11 @@ const calledWith = (fn: ReturnType<typeof mockFetch>, frag: string) =>
   fn.mock.calls.some(([url]) => String(url).includes(frag));
 
 // Identifier required so Meta validation reaches the fetch.
-const event = {
+const event: FacebookEventData = {
   eventName: "Purchase",
   eventId: "evt-1",
   emails: ["user@example.com"],
-} as any;
+};
 
 function configureMeta() {
   vi.stubEnv("NEXT_PUBLIC_FB_PIXEL_ID", "111");
@@ -89,7 +90,7 @@ describe("sendServerEvent — provider gating", () => {
 
     const res = await sendServerEvent(event);
 
-    // Meta has no token → it throws before any network call.
+    // Meta has no token → it throws before the network call.
     expect(fetchFn).not.toHaveBeenCalled();
     expect(res.meta?.ok).toBe(false);
     expect(res.meta?.error).toMatch(/Missing FB_PIXEL_ACCESS_TOKEN/);

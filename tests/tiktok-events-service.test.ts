@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { sendTikTokServerEvent } from "../dist/server/tiktok-events-service.js";
 import { hashData, toE164 } from "../dist/utils/hash.js";
+import type { FacebookEventData } from "../dist/types.js";
 
 const TIKTOK_API_URL =
   "https://business-api.tiktok.com/open_api/v1.3/event/track/";
@@ -14,7 +15,7 @@ function mockFetch(response: unknown, ok = true) {
   return fn;
 }
 
-const baseEvent = {
+const baseEvent: FacebookEventData = {
   eventName: "Purchase",
   eventId: "evt-123",
   emails: ["First@Example.com", "second@example.com"],
@@ -35,7 +36,7 @@ beforeEach(() => {
 describe("sendTikTokServerEvent — request payload", () => {
   it("posts a correctly-shaped Events API body", async () => {
     const fetchFn = mockFetch({ code: 0, message: "OK" });
-    await sendTikTokServerEvent(baseEvent as any);
+    await sendTikTokServerEvent(baseEvent);
 
     expect(fetchFn).toHaveBeenCalledTimes(1);
     const [url, init] = fetchFn.mock.calls[0] as [string, RequestInit];
@@ -55,7 +56,7 @@ describe("sendTikTokServerEvent — request payload", () => {
 
   it("uses event_time in SECONDS, not milliseconds", async () => {
     const fetchFn = mockFetch({ code: 0 });
-    await sendTikTokServerEvent(baseEvent as any);
+    await sendTikTokServerEvent(baseEvent);
     const ev = JSON.parse(
       (fetchFn.mock.calls[0][1] as RequestInit).body as string
     ).data[0];
@@ -67,7 +68,7 @@ describe("sendTikTokServerEvent — request payload", () => {
 
   it("hashes only the FIRST email, and the phone in E.164", async () => {
     const fetchFn = mockFetch({ code: 0 });
-    await sendTikTokServerEvent(baseEvent as any);
+    await sendTikTokServerEvent(baseEvent);
     const user = JSON.parse(
       (fetchFn.mock.calls[0][1] as RequestInit).body as string
     ).data[0].user;
@@ -78,7 +79,7 @@ describe("sendTikTokServerEvent — request payload", () => {
 
   it("passes ttp and user_agent UNHASHED", async () => {
     const fetchFn = mockFetch({ code: 0 });
-    await sendTikTokServerEvent(baseEvent as any);
+    await sendTikTokServerEvent(baseEvent);
     const user = JSON.parse(
       (fetchFn.mock.calls[0][1] as RequestInit).body as string
     ).data[0].user;
@@ -89,7 +90,7 @@ describe("sendTikTokServerEvent — request payload", () => {
 
   it("maps products to contents and carries value/currency + page.url", async () => {
     const fetchFn = mockFetch({ code: 0 });
-    await sendTikTokServerEvent(baseEvent as any);
+    await sendTikTokServerEvent(baseEvent);
     const ev = JSON.parse(
       (fetchFn.mock.calls[0][1] as RequestInit).body as string
     ).data[0];
@@ -105,14 +106,14 @@ describe("sendTikTokServerEvent — request payload", () => {
 describe("sendTikTokServerEvent — error handling", () => {
   it("throws on HTTP 200 with a non-zero code (TikTok's logical error signal)", async () => {
     mockFetch({ code: 40000, message: "Invalid params" }, true);
-    await expect(sendTikTokServerEvent(baseEvent as any)).rejects.toThrow(
+    await expect(sendTikTokServerEvent(baseEvent)).rejects.toThrow(
       /TikTok API error/
     );
   });
 
   it("resolves on code 0", async () => {
     mockFetch({ code: 0, message: "OK", request_id: "r1" });
-    await expect(sendTikTokServerEvent(baseEvent as any)).resolves.toMatchObject(
+    await expect(sendTikTokServerEvent(baseEvent)).resolves.toMatchObject(
       { code: 0 }
     );
   });
@@ -120,7 +121,7 @@ describe("sendTikTokServerEvent — error handling", () => {
   it("throws when access token is missing", async () => {
     vi.stubEnv("TIKTOK_ACCESS_TOKEN", "");
     mockFetch({ code: 0 });
-    await expect(sendTikTokServerEvent(baseEvent as any)).rejects.toThrow(
+    await expect(sendTikTokServerEvent(baseEvent)).rejects.toThrow(
       /Missing TIKTOK_ACCESS_TOKEN/
     );
   });
@@ -133,7 +134,7 @@ describe("sendTikTokServerEvent — dev mode", () => {
     const fetchFn = mockFetch({ code: 0 });
 
     const mod = await import("../dist/server/tiktok-events-service.js");
-    const res = await mod.sendTikTokServerEvent(baseEvent as any);
+    const res = await mod.sendTikTokServerEvent(baseEvent);
 
     expect(fetchFn).not.toHaveBeenCalled();
     expect(res).toMatchObject({ code: 0 });

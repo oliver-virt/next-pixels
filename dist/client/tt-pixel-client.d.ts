@@ -1,8 +1,18 @@
 export declare const TIKTOK_PIXEL_ID: string | undefined;
+/** Subset of the TikTok Pixel (`ttq`) runtime API used by this package. */
+export interface TikTokPixelApi {
+    page: () => void;
+    track: (event: string, properties?: Record<string, unknown>, options?: {
+        event_id?: string;
+    }) => void;
+    identify: (data: Record<string, unknown>) => void;
+    instance: (id: string) => TikTokPixelApi;
+    load: (id: string, options?: Record<string, unknown>) => void;
+}
 declare global {
     interface Window {
-        ttq: any;
-        TiktokAnalyticsObject: any;
+        ttq: TikTokPixelApi;
+        TiktokAnalyticsObject: string;
     }
 }
 export declare function isTikTokInitialized(): boolean;

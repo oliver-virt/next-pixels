@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { sendMetaServerEvent } from "../dist/server/capi-service.js";
 import { hashData, digitsOnly } from "../dist/utils/hash.js";
+import type { FacebookEventData } from "../dist/types.js";
 
 function mockFetch(response: unknown, ok = true) {
   const fn = vi.fn(async () => ({ ok, json: async () => response }));
@@ -8,7 +9,7 @@ function mockFetch(response: unknown, ok = true) {
   return fn;
 }
 
-const baseEvent = {
+const baseEvent: FacebookEventData = {
   eventName: "Purchase",
   eventId: "evt-123",
   emails: ["First@Example.com", "second@example.com"],
@@ -30,7 +31,7 @@ beforeEach(() => {
 describe("sendMetaServerEvent — request payload", () => {
   it("posts to the Graph API events endpoint for the pixel", async () => {
     const fetchFn = mockFetch({ events_received: 1 });
-    await sendMetaServerEvent(baseEvent as any);
+    await sendMetaServerEvent(baseEvent);
 
     const [url, init] = fetchFn.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://graph.facebook.com/v21.0/111222333/events");
@@ -40,7 +41,7 @@ describe("sendMetaServerEvent — request payload", () => {
 
   it("keeps the Meta event name unmapped and passes event_id + seconds", async () => {
     const fetchFn = mockFetch({ events_received: 1 });
-    await sendMetaServerEvent(baseEvent as any);
+    await sendMetaServerEvent(baseEvent);
     const ev = JSON.parse(
       (fetchFn.mock.calls[0][1] as RequestInit).body as string
     ).data[0];
@@ -54,7 +55,7 @@ describe("sendMetaServerEvent — request payload", () => {
 
   it("hashes ALL emails (array) and the phone digits-only", async () => {
     const fetchFn = mockFetch({ events_received: 1 });
-    await sendMetaServerEvent(baseEvent as any);
+    await sendMetaServerEvent(baseEvent);
     const user = JSON.parse(
       (fetchFn.mock.calls[0][1] as RequestInit).body as string
     ).data[0].user_data;
@@ -70,7 +71,7 @@ describe("sendMetaServerEvent — request payload", () => {
 
   it("maps products to custom_data.contents with id/quantity", async () => {
     const fetchFn = mockFetch({ events_received: 1 });
-    await sendMetaServerEvent(baseEvent as any);
+    await sendMetaServerEvent(baseEvent);
     const custom = JSON.parse(
       (fetchFn.mock.calls[0][1] as RequestInit).body as string
     ).data[0].custom_data;
@@ -87,13 +88,13 @@ describe("sendMetaServerEvent — validation & errors", () => {
   it("throws when no identifier is provided", async () => {
     mockFetch({ events_received: 1 });
     await expect(
-      sendMetaServerEvent({ eventName: "Lead", eventId: "x" } as any)
+      sendMetaServerEvent({ eventName: "Lead", eventId: "x" })
     ).rejects.toThrow(/Insufficient customer data/);
   });
 
   it("throws on a non-ok HTTP response", async () => {
     mockFetch({ error: { message: "bad" } }, false);
-    await expect(sendMetaServerEvent(baseEvent as any)).rejects.toThrow(
+    await expect(sendMetaServerEvent(baseEvent)).rejects.toThrow(
       /Facebook API error/
     );
   });

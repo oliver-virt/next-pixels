@@ -1,8 +1,8 @@
 export declare const FB_PIXEL_ID: string | undefined;
 declare global {
     interface Window {
-        fbq: (...args: any[]) => void;
-        _fbq: (...args: any[]) => void;
+        fbq: (...args: unknown[]) => void;
+        _fbq: (...args: unknown[]) => void;
     }
 }
 export declare function isPixelInitialized(): boolean;

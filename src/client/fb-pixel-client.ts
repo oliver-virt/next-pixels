@@ -6,8 +6,8 @@ export const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
 
 declare global {
   interface Window {
-    fbq: (...args: any[]) => void;
-    _fbq: (...args: any[]) => void;
+    fbq: (...args: unknown[]) => void;
+    _fbq: (...args: unknown[]) => void;
   }
 }
 
