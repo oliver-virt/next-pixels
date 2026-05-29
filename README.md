@@ -17,25 +17,39 @@ Under-reported conversions don't just dent your dashboards — they starve the a
 **The fix the platforms recommend.** Send each event **twice**: once from the browser (pixel) and once from your server (Meta Conversions API / TikTok Events API). The server call runs even when the browser one is blocked, and carries hashed first-party data (email, phone) for stronger matching. To avoid counting the same conversion twice, both hits share one **event ID** that the platform deduplicates on.
 
 ```mermaid
-flowchart LR
-    C["🛒 User converts"]
+flowchart TB
+    C(["🛒 User converts"])
 
-    subgraph browseronly ["Browser pixel only"]
-        direction TB
-        PX["Browser pixel"] -->|"blocked: ad blocker, iOS/ITP, tab close"| LOST["❌ conversion lost"]
-        PX -->|"otherwise"| AD1["Ad platform"]
+    subgraph NO ["❌ WITHOUT — browser pixel only"]
+        direction LR
+        PX1["Browser pixel"]
+        PX1 -->|"blocked: ad blocker · iOS/ITP · tab close"| LOST["💥 conversion LOST"]
+        PX1 -->|"otherwise"| AD1["Ad platform"]
     end
 
-    subgraph dual ["next-pixels: pixel + server"]
-        direction TB
+    subgraph YES ["✅ WITH next-pixels — pixel + server"]
+        direction LR
         PX2["Browser pixel"] --> AD2["Ad platform"]
         SRV["Your server → Conversions / Events API"] --> AD2
-        AD2 --> DEDUP["✅ same event_id → counted once"]
+        AD2 --> ONCE(["counted once — deduped by event_id"])
     end
 
-    C --> PX
+    C --> PX1
     C --> PX2
     C --> SRV
+
+    classDef bad  fill:#2a0e0e,stroke:#ef4444,stroke-width:2px,color:#fecaca;
+    classDef good fill:#0c2a18,stroke:#22c55e,stroke-width:2px,color:#bbf7d0;
+    classDef box  fill:#1f2937,stroke:#9ca3af,color:#f3f4f6;
+    classDef start fill:#1e3a8a,stroke:#60a5fa,color:#dbeafe;
+
+    class C start;
+    class LOST bad;
+    class ONCE,SRV good;
+    class PX1,PX2,AD1,AD2 box;
+
+    style NO  fill:#170a0a,stroke:#ef4444,stroke-width:2px,color:#fca5a5;
+    style YES fill:#0a1a12,stroke:#22c55e,stroke-width:2px,color:#86efac;
 ```
 
 The server path has no script to block, so the conversion still lands even when the browser pixel doesn't.
@@ -149,16 +163,15 @@ flowchart TD
     T["track({ eventName: 'Purchase' })"] --> ID["Generate one event_id (UUID)"]
 
     ID --> FBC["fbq('track','Purchase')"]
-    ID --> TTC["ttq.track('CompletePayment')"]
     ID --> POST["POST /api/events"]
-
     POST --> FBS["Meta Conversions API"]
     POST --> TTS["TikTok Events API"]
+    ID --> TTC["ttq.track('CompletePayment')"]
 
     FBC --> FB(("Meta"))
     FBS --> FB
-    TTC --> TT(("TikTok"))
-    TTS --> TT
+    TTS --> TT(("TikTok"))
+    TTC --> TT
 
     FB --> FBD["dedup by event_id ✅"]
     TT --> TTD["dedup by event_id ✅"]
@@ -280,6 +293,24 @@ export const POST = eventsHandler;
 | `FB_TEST_EVENT_CODE` | No | Server only | Meta test event code for development |
 
 A provider activates only when its `NEXT_PUBLIC_*_PIXEL_ID` is set — so this package works with Meta only, TikTok only, or both.
+
+## Getting your credentials
+
+New to pixels? Here's where each value comes from. You only need credentials for the provider(s) you actually use.
+
+### Meta (Facebook)
+
+1. **Pixel ID** → open [Meta Events Manager](https://business.facebook.com/events_manager2), create (or select) a Data Source of type **Web**. The numeric **Pixel ID** shown there is your `NEXT_PUBLIC_FB_PIXEL_ID`.
+2. **Conversions API access token** → in Events Manager, open your pixel → **Settings** → **Conversions API** → **Generate access token**. That value is `FB_PIXEL_ACCESS_TOKEN` (keep it server-side only).
+3. Docs: [Meta Pixel — get started](https://developers.facebook.com/docs/meta-pixel/get-started) · [Conversions API — get started](https://developers.facebook.com/docs/marketing-api/conversions-api/get-started) (incl. the [access token](https://developers.facebook.com/docs/marketing-api/conversions-api/get-started/#access-token) step).
+
+### TikTok
+
+1. **Pixel ID** → open [TikTok Events Manager](https://ads.tiktok.com/i18n/events_manager) (TikTok Ads Manager → **Tools → Events Manager**), **Connect Data Source → Web**, create a pixel. The **Pixel ID** (the `sdkid` in the snippet) is your `NEXT_PUBLIC_TIKTOK_PIXEL_ID`.
+2. **Events API access token** → in Events Manager, open your pixel → **Settings** → generate an **Events API** access token. That value is `TIKTOK_ACCESS_TOKEN` (server-side only).
+3. Docs: [TikTok Pixel — get started](https://ads.tiktok.com/help/article/get-started-pixel) · [Events API 2.0](https://business-api.tiktok.com/portal/docs?id=1771101027431426).
+
+> Pixel IDs are public (they ship in the browser, hence the `NEXT_PUBLIC_` prefix). Access tokens are **secrets** — never expose them client-side; this package only ever uses them in server code.
 
 ## Cookie Consent
 
