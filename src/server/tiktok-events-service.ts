@@ -80,7 +80,7 @@ async function createEventPayload(
 export async function sendTikTokServerEvent(eventData: FacebookEventData) {
   if (isDevMode()) {
     const payload = await createEventPayload(eventData);
-    console.log("[next-meta-pixel] dev - TikTok event:", {
+    console.log("[next-pixels] dev - TikTok event:", {
       event: payload.event,
       event_id: payload.event_id,
       hasTtp: !!eventData.ttp,
@@ -99,12 +99,12 @@ export async function sendTikTokServerEvent(eventData: FacebookEventData) {
 
   if (!accessToken || !pixelId) {
     throw new Error(
-      "[next-meta-pixel] Missing TIKTOK_ACCESS_TOKEN or NEXT_PUBLIC_TIKTOK_PIXEL_ID"
+      "[next-pixels] Missing TIKTOK_ACCESS_TOKEN or NEXT_PUBLIC_TIKTOK_PIXEL_ID"
     );
   }
 
   if (!eventData.eventName || !eventData.eventId) {
-    throw new Error("[next-meta-pixel] Missing required eventName or eventId");
+    throw new Error("[next-pixels] Missing required eventName or eventId");
   }
 
   const payload = {
@@ -129,9 +129,9 @@ export async function sendTikTokServerEvent(eventData: FacebookEventData) {
 
   // TikTok returns HTTP 200 with a non-zero `code` on logical errors.
   if (!response.ok || (result && typeof result.code === "number" && result.code !== 0)) {
-    console.error("[next-meta-pixel] TikTok API error:", result);
+    console.error("[next-pixels] TikTok API error:", result);
     throw new Error(
-      `[next-meta-pixel] TikTok API error: ${JSON.stringify(result)}`
+      `[next-pixels] TikTok API error: ${JSON.stringify(result)}`
     );
   }
 

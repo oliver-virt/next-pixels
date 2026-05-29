@@ -7,7 +7,7 @@ export async function sendServerEventDev(eventData) {
     const testEventCode = !eventData.fbp && !eventData.fbc
         ? process.env.FB_TEST_EVENT_CODE || "TEST12345"
         : undefined;
-    console.log("[next-meta-pixel] dev - Processing event:", {
+    console.log("[next-pixels] dev - Processing event:", {
         eventName: eventData.eventName,
         eventId: eventData.eventId,
         hasFbp: !!eventData.fbp,
@@ -21,7 +21,7 @@ export async function sendServerEventDev(eventData) {
         messages: [],
         fbtrace_id: `dev-trace-${Date.now()}`,
     };
-    console.log("[next-meta-pixel] dev - Mock response:", mockResponse);
+    console.log("[next-pixels] dev - Mock response:", mockResponse);
     return mockResponse;
 }
 export function isDevMode() {

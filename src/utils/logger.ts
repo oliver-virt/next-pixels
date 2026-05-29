@@ -6,7 +6,7 @@ export function logPixelEvent(
   source: "client" | "server" = "client"
 ) {
   if (isDevelopment) {
-    console.log(`[next-meta-pixel] ${source} - ${event}:`, data);
+    console.log(`[next-pixels] ${source} - ${event}:`, data);
   }
 }
 
@@ -16,7 +16,7 @@ export function logPixelError(
   source: "client" | "server" = "client"
 ) {
   if (isDevelopment) {
-    console.error(`[next-meta-pixel] ${source} - ${message}:`, error);
+    console.error(`[next-pixels] ${source} - ${message}:`, error);
   }
 }
 
@@ -26,7 +26,7 @@ export function logPixelWarning(
 ) {
   if (isDevelopment) {
     console.warn(
-      `[next-meta-pixel] ${source ? source + " - " : ""}${message}`
+      `[next-pixels] ${source ? source + " - " : ""}${message}`
     );
   }
 }

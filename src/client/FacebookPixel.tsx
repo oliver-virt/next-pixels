@@ -13,7 +13,7 @@ import { logPixelEvent, logPixelError, logPixelWarning } from "../utils/logger.j
  * @example
  * ```tsx
  * // app/layout.tsx
- * import { FacebookPixel } from "next-meta-pixel";
+ * import { FacebookPixel } from "next-pixels";
  *
  * export default function RootLayout({ children }) {
  *   return (

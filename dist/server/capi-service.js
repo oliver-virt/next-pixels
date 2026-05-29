@@ -98,14 +98,14 @@ export async function sendMetaServerEvent(eventData) {
     const accessToken = process.env.FB_PIXEL_ACCESS_TOKEN;
     const pixelId = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
     if (!accessToken || !pixelId) {
-        throw new Error("[next-meta-pixel] Missing FB_PIXEL_ACCESS_TOKEN or NEXT_PUBLIC_FB_PIXEL_ID");
+        throw new Error("[next-pixels] Missing FB_PIXEL_ACCESS_TOKEN or NEXT_PUBLIC_FB_PIXEL_ID");
     }
     if (!eventData.eventName || !eventData.eventId) {
-        throw new Error("[next-meta-pixel] Missing required eventName or eventId");
+        throw new Error("[next-pixels] Missing required eventName or eventId");
     }
     const validation = validateCustomerData(eventData);
     if (!validation.isValid) {
-        throw new Error(`[next-meta-pixel] ${validation.error}`);
+        throw new Error(`[next-pixels] ${validation.error}`);
     }
     const payload = {
         data: [await createEventPayload(eventData)],
@@ -121,8 +121,8 @@ export async function sendMetaServerEvent(eventData) {
     });
     const result = await response.json();
     if (!response.ok) {
-        console.error("[next-meta-pixel] Facebook API error:", result);
-        throw new Error(`[next-meta-pixel] Facebook API error: ${JSON.stringify(result)}`);
+        console.error("[next-pixels] Facebook API error:", result);
+        throw new Error(`[next-pixels] Facebook API error: ${JSON.stringify(result)}`);
     }
     return result;
 }
@@ -157,7 +157,7 @@ export async function sendServerEvent(eventData) {
         }
         else {
             const message = res.reason instanceof Error ? res.reason.message : String(res.reason);
-            console.error(`[next-meta-pixel] ${key} server event failed:`, message);
+            console.error(`[next-pixels] ${key} server event failed:`, message);
             out[key] = { ok: false, error: message };
         }
     });

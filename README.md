@@ -1,4 +1,4 @@
-# next-meta-pixel
+# next-pixels
 
 Facebook **and TikTok** Pixel + server-side Conversions / Events API for Next.js App Router.
 
@@ -21,7 +21,7 @@ One `track()` call fires both the browser pixel and the server API for every con
 ### 1. Install
 
 ```bash
-npm install next-meta-pixel
+npm install next-pixels
 ```
 
 ### 2. Add environment variables
@@ -44,7 +44,7 @@ TIKTOK_ACCESS_TOKEN=...                 # Events API access token (server only)
 
 ```tsx
 // app/layout.tsx
-import { Pixel, PixelPageView } from "next-meta-pixel";
+import { Pixel, PixelPageView } from "next-pixels";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -65,14 +65,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ```ts
 // app/api/events/route.ts
-import { eventsHandler } from "next-meta-pixel/handlers";
+import { eventsHandler } from "next-pixels/handlers";
 export const POST = eventsHandler;
 ```
 
 ### 5. Track events
 
 ```tsx
-import { track } from "next-meta-pixel";
+import { track } from "next-pixels";
 
 // Fires Meta "Lead" + TikTok "SubmitForm", deduped, client + server
 track({ eventName: "Lead" });
@@ -161,7 +161,7 @@ track({ eventName: "AddToCart", data: { value: 19.99 } });
 ### Event name mapping
 
 ```ts
-import { META_TO_TIKTOK_EVENTS, toTikTokEventName } from "next-meta-pixel";
+import { META_TO_TIKTOK_EVENTS, toTikTokEventName } from "next-pixels";
 
 toTikTokEventName("Purchase");            // "CompletePayment"
 toTikTokEventName("MyCustom");            // "MyCustom" (passthrough)
@@ -177,7 +177,7 @@ Standard events: Meta — `Lead`, `Purchase`, `AddToCart`, `InitiateCheckout`, `
 Forward an event to every configured provider's server API. Returns a per-provider result object: `{ meta?: {...}, tiktok?: {...} }`. Use for server-side events (API routes, Server Actions).
 
 ```ts
-import { sendServerEvent } from "next-meta-pixel/server";
+import { sendServerEvent } from "next-pixels/server";
 
 const result = await sendServerEvent({
   eventName: "Lead",
@@ -198,7 +198,7 @@ Pre-built Next.js POST handler that fans out to all configured providers.
 
 ```ts
 // app/api/events/route.ts
-import { eventsHandler } from "next-meta-pixel/handlers";
+import { eventsHandler } from "next-pixels/handlers";
 export const POST = eventsHandler;
 ```
 
@@ -251,7 +251,7 @@ In development (`NODE_ENV=development`):
 
 - The API route returns mock responses for each provider (no real API calls)
 - Missing `_fbp`/`_fbc` cookies are replaced with realistic fallbacks
-- All events are logged to the console with `[next-meta-pixel]` prefix
+- All events are logged to the console with `[next-pixels]` prefix
 - Set `FB_TEST_EVENT_CODE` to test with Meta's Test Events tool
 
 ## License

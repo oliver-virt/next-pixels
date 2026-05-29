@@ -4,7 +4,7 @@ import type { TrackOptions } from "../types.js";
  *
  * @example
  * ```tsx
- * import { usePixel } from "next-meta-pixel";
+ * import { usePixel } from "next-pixels";
  *
  * function CheckoutButton() {
  *   const { track } = usePixel();

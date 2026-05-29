@@ -1,12 +1,12 @@
 {
-  "name": "next-meta-pixel",
+  "name": "next-pixels",
   "version": "0.1.0",
   "description": "Facebook + TikTok Pixel & server-side Conversions/Events API for Next.js App Router. One track() call, dual client/server tracking with automatic deduplication.",
   "license": "MIT",
   "author": "Orbitoly",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Orbitoly/next-meta-pixel"
+    "url": "https://github.com/oliver-virt/next-pixels"
   },
   "keywords": [
     "nextjs",

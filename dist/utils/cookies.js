@@ -43,7 +43,7 @@ export function getFbCookies() {
         // Development fallback
         const fbp = generateDevFbpCookie();
         const fbc = generateDevFbcCookie();
-        console.log("[next-meta-pixel] dev - Using fallback cookies:", {
+        console.log("[next-pixels] dev - Using fallback cookies:", {
             fbp,
             fbc,
         });

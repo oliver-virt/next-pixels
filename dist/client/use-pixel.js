@@ -6,7 +6,7 @@ import { track as trackEvent } from "./track.js";
  *
  * @example
  * ```tsx
- * import { usePixel } from "next-meta-pixel";
+ * import { usePixel } from "next-pixels";
  *
  * function CheckoutButton() {
  *   const { track } = usePixel();
@@ -28,7 +28,7 @@ export function usePixel() {
             trackEvent(options);
         }
         catch (error) {
-            console.error("[next-meta-pixel] Failed to track event:", error);
+            console.error("[next-pixels] Failed to track event:", error);
         }
     }, []);
     return { track };

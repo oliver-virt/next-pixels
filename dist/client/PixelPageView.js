@@ -22,7 +22,7 @@ function PixelPageViewContent() {
  * @example
  * ```tsx
  * // app/layout.tsx
- * import { FacebookPixel, PixelPageView } from "next-meta-pixel";
+ * import { FacebookPixel, PixelPageView } from "next-pixels";
  *
  * export default function RootLayout({ children }) {
  *   return (

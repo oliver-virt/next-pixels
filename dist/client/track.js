@@ -18,7 +18,7 @@ const DEFAULT_API_ROUTE = "/api/events";
  *
  * @example
  * ```tsx
- * import { track } from "next-meta-pixel";
+ * import { track } from "next-pixels";
  *
  * // Fires Meta "Purchase" + TikTok "CompletePayment", deduped
  * track({

@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
  * @example
  * ```ts
  * // app/api/events/route.ts
- * import { eventsHandler } from "next-meta-pixel/handlers";
+ * import { eventsHandler } from "next-pixels/handlers";
  * export const POST = eventsHandler;
  * ```
  */

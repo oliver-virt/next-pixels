@@ -9,7 +9,7 @@
  * @example
  * ```tsx
  * // app/layout.tsx
- * import { Pixel, PixelPageView } from "next-meta-pixel";
+ * import { Pixel, PixelPageView } from "next-pixels";
  *
  * export default function RootLayout({ children }) {
  *   return (

@@ -8,7 +8,7 @@
  *
  * @example
  * ```tsx
- * import { TikTokPixel } from "next-meta-pixel";
+ * import { TikTokPixel } from "next-pixels";
  * // app/layout.tsx
  * <TikTokPixel />
  * ```
