@@ -1,6 +1,6 @@
 {
   "name": "next-pixels",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Facebook + TikTok Pixel & server-side Conversions/Events API for Next.js App Router. One track() call, dual client/server tracking with automatic deduplication.",
   "license": "MIT",
   "author": "Orbitoly",
