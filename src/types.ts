@@ -60,6 +60,11 @@ export interface TrackOptions {
    * Useful for custom events that have a different name on TikTok.
    */
   tiktokEventName?: string;
+  /**
+   * Explicit Google Ads conversion label for this event, overriding the
+   * registered map / env default. (Google Ads is client-only.)
+   */
+  googleLabel?: string;
   /** API endpoint URL for server-side forwarding (default: "/api/events") */
   apiRoute?: string;
 }

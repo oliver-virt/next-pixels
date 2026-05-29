@@ -2,6 +2,7 @@
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 import { FacebookPixel } from "./FacebookPixel.js";
 import { TikTokPixel } from "./TikTokPixel.js";
+import { GoogleAds } from "./GoogleAds.js";
 /**
  * Combined pixel loader — renders every configured provider's script.
  *
@@ -27,6 +28,6 @@ import { TikTokPixel } from "./TikTokPixel.js";
  * ```
  */
 export function Pixel() {
-    return (_jsxs(_Fragment, { children: [_jsx(FacebookPixel, {}), _jsx(TikTokPixel, {})] }));
+    return (_jsxs(_Fragment, { children: [_jsx(FacebookPixel, {}), _jsx(TikTokPixel, {}), _jsx(GoogleAds, {})] }));
 }
 //# sourceMappingURL=Pixel.js.map

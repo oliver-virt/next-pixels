@@ -2,6 +2,7 @@
 
 import { FacebookPixel } from "./FacebookPixel.js";
 import { TikTokPixel } from "./TikTokPixel.js";
+import { GoogleAds } from "./GoogleAds.js";
 
 /**
  * Combined pixel loader — renders every configured provider's script.
@@ -32,6 +33,7 @@ export function Pixel() {
     <>
       <FacebookPixel />
       <TikTokPixel />
+      <GoogleAds />
     </>
   );
 }

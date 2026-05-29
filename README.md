@@ -1,8 +1,8 @@
 # next-pixels
 
-Facebook **and TikTok** Pixel + server-side Conversions / Events API for Next.js App Router.
+Facebook, **TikTok**, and **Google Ads** pixels + server-side Conversions / Events API for Next.js App Router.
 
-One `track()` call fires both the browser pixel and the server API for every configured provider, with automatic deduplication, PII hashing, and TypeScript support.
+One `track()` call fires the browser pixel (and the server API where the platform supports it) for every configured provider, with automatic deduplication, PII hashing, and TypeScript support.
 
 ## Why this exists
 
@@ -65,8 +65,8 @@ The server path has no script to block, so the conversion still lands even when 
 
 ## Features
 
-- **Multi-provider** — Meta (Facebook) and TikTok from a single `track()` call
-- **Pixel + server API** — Sends events to both browser and server for maximum attribution (Meta CAPI + TikTok Events API)
+- **Multi-provider** — Meta (Facebook), TikTok, and Google Ads from a single `track()` call
+- **Pixel + server API** — Dual browser+server tracking for maximum attribution (Meta CAPI + TikTok Events API). Google Ads is client-side via gtag + Enhanced Conversions ([why](#a-note-on-google-ads))
 - **Auto-deduplication** — A shared event ID prevents double-counting on each platform
 - **Auto event mapping** — Meta event names map to TikTok equivalents (e.g. `Purchase` → `CompletePayment`)
 - **PII hashing** — SHA256 hashing of emails, phones, names before sending
@@ -97,6 +97,10 @@ FB_PIXEL_ACCESS_TOKEN=EAAx...           # CAPI access token (server only)
 # TikTok
 NEXT_PUBLIC_TIKTOK_PIXEL_ID=D8CNI...    # Pixel / sdkid
 TIKTOK_ACCESS_TOKEN=...                 # Events API access token (server only)
+
+# Google Ads (client-side only)
+NEXT_PUBLIC_GOOGLE_ADS_ID=AW-123456789  # Conversion ID
+NEXT_PUBLIC_GOOGLE_ADS_LABEL=AbC-D_efG  # Default conversion label (optional)
 ```
 
 ### 3. Add to your layout
@@ -167,14 +171,17 @@ flowchart TD
     POST --> FBS["Meta Conversions API"]
     POST --> TTS["TikTok Events API"]
     ID --> TTC["ttq.track('CompletePayment')"]
+    ID --> GAC["gtag('event','conversion') + Enhanced Conversions"]
 
     FBC --> FB(("Meta"))
     FBS --> FB
     TTS --> TT(("TikTok"))
     TTC --> TT
+    GAC --> GA(("Google Ads"))
 
     FB --> FBD["dedup by event_id ✅"]
     TT --> TTD["dedup by event_id ✅"]
+    GA --> GAD["client-only (no server API)"]
 ```
 
 The event-name map (`Purchase` → `CompletePayment`, `Lead` → `SubmitForm`, etc.) is applied automatically. Override per call with `tiktokEventName`, or read/extend the map via the exported `META_TO_TIKTOK_EVENTS` / `toTikTokEventName`.
@@ -187,9 +194,9 @@ The event-name map (`Purchase` → `CompletePayment`, `Lead` → `SubmitForm`, e
 
 Loads the script for every configured provider. Add once in your root layout.
 
-#### `<FacebookPixel />` / `<TikTokPixel />`
+#### `<FacebookPixel />` / `<TikTokPixel />` / `<GoogleAds />`
 
-Load a single provider's pixel. Each renders nothing if its `NEXT_PUBLIC_*_PIXEL_ID` is unset.
+Load a single provider's pixel. Each renders nothing if its env var (`NEXT_PUBLIC_FB_PIXEL_ID` / `NEXT_PUBLIC_TIKTOK_PIXEL_ID` / `NEXT_PUBLIC_GOOGLE_ADS_ID`) is unset.
 
 #### `<PixelPageView />`
 
@@ -213,11 +220,25 @@ track({
   firstName: "John",              // Optional
   lastName: "Doe",                // Optional
   tiktokEventName: "ViewContent", // Optional — explicit TikTok name (overrides the map)
+  googleLabel: "AbC-D_efG",       // Optional — Google Ads conversion label for this event
   apiRoute: "/api/events",        // Optional — default: "/api/events"
 });
 ```
 
 `fbEvent(options)` is a deprecated alias for `track` (same signature), kept for backward compatibility.
+
+**Google Ads conversion labels.** Google needs a distinct label per conversion action. Register a map once (e.g. in your layout) so `track()` knows which label each event uses:
+
+```ts
+import { setGoogleConversionLabels } from "next-pixels";
+
+setGoogleConversionLabels({
+  Purchase: "AbC-D_efG",
+  Lead: "XyZ-1_2345",
+});
+```
+
+Resolution order per event: `googleLabel` option → registered map → `NEXT_PUBLIC_GOOGLE_ADS_LABEL`. If none resolves, the Google conversion is skipped (with a dev warning) while Meta/TikTok still fire.
 
 #### `usePixel()`
 
@@ -233,8 +254,9 @@ track({ eventName: "AddToCart", data: { value: 19.99 } });
 - `trackStandardEvent(name, options?, eventID?)` — `fbq('track', ...)` only
 - `trackCustomEvent(name, options, eventID)` — `fbq('trackCustom', ...)` only
 - `trackTikTokEvent(name, options?, eventID?, tiktokNameOverride?)` — `ttq.track(...)` only
-- `trackPageView(...)` / `trackTikTokPageView()` — per-provider PageView
-- `isPixelInitialized()` / `isTikTokInitialized()` — script-loaded checks
+- `trackGoogleAdsConversion(name, options?, eventID?, label?, userData?)` — `gtag('event','conversion')` only
+- `trackPageView(...)` / `trackTikTokPageView()` / `trackGoogleAdsPageView()` — per-provider PageView
+- `isPixelInitialized()` / `isTikTokInitialized()` / `isGoogleAdsInitialized()` — script-loaded checks
 
 ### Event name mapping
 
@@ -268,6 +290,8 @@ const result = await sendServerEvent({
 
 Per-provider helpers are also exported: `sendMetaServerEvent`, `sendTikTokServerEvent`, plus `isMetaConfigured()` / `isTikTokConfigured()`.
 
+> Google Ads has no server-side call here — it's client-only (see [the note below](#a-note-on-google-ads)), so `sendServerEvent` only ever forwards to Meta and TikTok.
+
 ### Handler
 
 #### `eventsHandler`
@@ -290,9 +314,20 @@ export const POST = eventsHandler;
 | `FB_PIXEL_ACCESS_TOKEN` | For Meta CAPI | Server only | Meta [System User access token](https://developers.facebook.com/docs/marketing-api/conversions-api/get-started/#access-token) |
 | `NEXT_PUBLIC_TIKTOK_PIXEL_ID` | For TikTok | Client + Server | TikTok Pixel ID / sdkid |
 | `TIKTOK_ACCESS_TOKEN` | For TikTok Events API | Server only | TikTok [Events API access token](https://business-api.tiktok.com/portal/docs?id=1771101027431426) |
+| `NEXT_PUBLIC_GOOGLE_ADS_ID` | For Google Ads | Client only | Google Ads conversion ID (`AW-XXXXXXXXX`) |
+| `NEXT_PUBLIC_GOOGLE_ADS_LABEL` | No | Client only | Default Google Ads conversion label (per-event labels via `setGoogleConversionLabels`) |
 | `FB_TEST_EVENT_CODE` | No | Server only | Meta test event code for development |
 
-A provider activates only when its `NEXT_PUBLIC_*_PIXEL_ID` is set — so this package works with Meta only, TikTok only, or both.
+A provider activates only when its `NEXT_PUBLIC_*` ID is set — so this package works with any subset: Meta only, TikTok only, Google only, or all together.
+
+### A note on Google Ads
+
+Meta and TikTok expose a simple server endpoint (Conversions / Events API) that this package calls with an access token — that's the dual client+server dedup story. **Google Ads is different:**
+
+- Its server-side conversions require the full **Google Ads API** (OAuth2 + developer token + customer ID), not a token-in-env fetch — out of scope here.
+- Its analytics server path (GA4 Measurement Protocol) is a *separate* stream that would **double-count** if fired alongside the browser tag.
+
+So for Google, `next-pixels` fires the **browser tag only** (`gtag`), and attaches hashed **Enhanced Conversions** data (email/phone) to recover most of the match-quality a server call would add. `transaction_id` carries the shared event id for Google's own dedup. No `/api/events` call is made for Google.
 
 ## Getting your credentials
 
@@ -309,6 +344,13 @@ New to pixels? Here's where each value comes from. You only need credentials for
 1. **Pixel ID** → open [TikTok Events Manager](https://ads.tiktok.com/i18n/events_manager) (TikTok Ads Manager → **Tools → Events Manager**), **Connect Data Source → Web**, create a pixel. The **Pixel ID** (the `sdkid` in the snippet) is your `NEXT_PUBLIC_TIKTOK_PIXEL_ID`.
 2. **Events API access token** → in Events Manager, open your pixel → **Settings** → generate an **Events API** access token. That value is `TIKTOK_ACCESS_TOKEN` (server-side only).
 3. Docs: [TikTok Pixel — get started](https://ads.tiktok.com/help/article/get-started-pixel) · [Events API 2.0](https://business-api.tiktok.com/portal/docs?id=1771101027431426).
+
+### Google Ads
+
+1. **Conversion ID** → in [Google Ads](https://ads.google.com) → **Goals → Conversions → Summary**, create a **Website** conversion action. The tag shows `AW-XXXXXXXXX` (the conversion ID) and a **conversion label**.
+2. `NEXT_PUBLIC_GOOGLE_ADS_ID` = the `AW-XXXXXXXXX` part. Map each conversion action's **label** to an event via `setGoogleConversionLabels` (or set one `NEXT_PUBLIC_GOOGLE_ADS_LABEL` default).
+3. Optionally turn on **Enhanced Conversions** in the conversion action's settings to use the hashed email/phone this package sends.
+4. Docs: [Set up a conversion action](https://support.google.com/google-ads/answer/6095821) · [Enhanced Conversions (gtag)](https://support.google.com/google-ads/answer/11062876).
 
 > Pixel IDs are public (they ship in the browser, hence the `NEXT_PUBLIC_` prefix). Access tokens are **secrets** — never expose them client-side; this package only ever uses them in server code.
 
@@ -336,9 +378,9 @@ function Layout({ children }) {
 If you use CSP headers, add these domains:
 
 ```
-script-src:  https://connect.facebook.net https://analytics.tiktok.com
-connect-src: https://connect.facebook.net https://www.facebook.com https://analytics.tiktok.com https://business-api.tiktok.com
-img-src:     https://www.facebook.com
+script-src:  https://connect.facebook.net https://analytics.tiktok.com https://www.googletagmanager.com
+connect-src: https://connect.facebook.net https://www.facebook.com https://analytics.tiktok.com https://business-api.tiktok.com https://www.googletagmanager.com https://www.google-analytics.com https://googleads.g.doubleclick.net
+img-src:     https://www.facebook.com https://www.google.com https://googleads.g.doubleclick.net
 ```
 
 ## Development Mode

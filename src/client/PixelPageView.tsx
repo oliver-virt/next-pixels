@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { trackPageView } from "./fb-pixel-client.js";
 import { trackTikTokPageView } from "./tt-pixel-client.js";
+import { trackGoogleAdsPageView } from "./google-ads-client.js";
 
 function PixelPageViewContent() {
   const pathname = usePathname();
@@ -12,6 +13,7 @@ function PixelPageViewContent() {
   useEffect(() => {
     trackPageView(pathname, searchParams);
     trackTikTokPageView();
+    trackGoogleAdsPageView();
   }, [pathname, searchParams]);
 
   return null;

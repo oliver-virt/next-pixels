@@ -2,6 +2,7 @@
 export { Pixel } from "./client/Pixel.js";
 export { FacebookPixel } from "./client/FacebookPixel.js";
 export { TikTokPixel } from "./client/TikTokPixel.js";
+export { GoogleAds } from "./client/GoogleAds.js";
 export { PixelPageView } from "./client/PixelPageView.js";
 
 // Client tracking
@@ -20,6 +21,15 @@ export {
   isTikTokInitialized,
   TIKTOK_PIXEL_ID,
 } from "./client/tt-pixel-client.js";
+export {
+  trackGoogleAdsConversion,
+  trackGoogleAdsPageView,
+  setGoogleConversionLabels,
+  isGoogleAdsInitialized,
+  GOOGLE_ADS_ID,
+} from "./client/google-ads-client.js";
+
+export type { GoogleUserData } from "./client/google-ads-client.js";
 
 // Event name mapping
 export { META_TO_TIKTOK_EVENTS, toTikTokEventName } from "./event-map.js";

@@ -4,6 +4,7 @@ import { generateUUID } from "../utils/uuid.js";
 import { logPixelEvent, logPixelError } from "../utils/logger.js";
 import { trackStandardEvent } from "./fb-pixel-client.js";
 import { trackTikTokEvent } from "./tt-pixel-client.js";
+import { trackGoogleAdsConversion, } from "./google-ads-client.js";
 const DEFAULT_API_ROUTE = "/api/events";
 /**
  * Track an event across every configured provider — client and server.
@@ -29,7 +30,7 @@ const DEFAULT_API_ROUTE = "/api/events";
  * ```
  */
 export function track(options) {
-    const { eventName, data = {}, emails, phones, firstName, lastName, tiktokEventName, apiRoute = DEFAULT_API_ROUTE, } = options;
+    const { eventName, data = {}, emails, phones, firstName, lastName, tiktokEventName, googleLabel, apiRoute = DEFAULT_API_ROUTE, } = options;
     if (!eventName) {
         logPixelError("track called without eventName", undefined, "client");
         return;
@@ -65,6 +66,14 @@ export function track(options) {
     catch (error) {
         logPixelError(`Failed TikTok client tracking: ${eventName}`, error, "client");
     }
+    try {
+        // Google Ads is client-only (Enhanced Conversions); no server forwarding.
+        const userData = buildGoogleUserData(emails, phones, firstName, lastName);
+        trackGoogleAdsConversion(eventName, data, eventId, googleLabel, userData);
+    }
+    catch (error) {
+        logPixelError(`Failed Google client tracking: ${eventName}`, error, "client");
+    }
     logPixelEvent(`Tracked: ${eventName}`, { eventId }, "client");
     // 2. Server-side: fire-and-forget POST to the unified events route
     fetch(apiRoute, {
@@ -83,6 +92,21 @@ export function track(options) {
         .catch((error) => {
         logPixelError(`Server event request failed: ${eventName}`, error, "server");
     });
+}
+/** Build Google Enhanced Conversions data from the call's PII (undefined if none). */
+function buildGoogleUserData(emails, phones, firstName, lastName) {
+    const userData = {};
+    if (emails?.length)
+        userData.email = emails[0];
+    if (phones?.length)
+        userData.phone_number = phones[0];
+    if (firstName || lastName) {
+        userData.address = {
+            ...(firstName && { first_name: firstName }),
+            ...(lastName && { last_name: lastName }),
+        };
+    }
+    return Object.keys(userData).length ? userData : undefined;
 }
 /** @deprecated Use {@link track}. Kept for backward compatibility (Meta-era name). */
 export const fbEvent = track;
