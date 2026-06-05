@@ -31,6 +31,7 @@ async function transformUserData(
     user.phone = await hashData(toE164(data.phones[0]));
   }
   if (data.ttp) user.ttp = data.ttp;
+  if (data.ttclid) user.ttclid = data.ttclid;
   if (data.userAgent) user.user_agent = data.userAgent;
 
   return user;

@@ -33,6 +33,8 @@ export interface FacebookEventData {
   fbc?: string;
   /** TikTok Pixel cookie (_ttp) */
   ttp?: string;
+  /** TikTok Click ID (from ad URL or first-touch attribution cookie) */
+  ttclid?: string;
   /**
    * Explicit TikTok event name. Overrides the Meta→TikTok name mapping
    * (e.g. set this if `eventName` is custom and should differ on TikTok).
