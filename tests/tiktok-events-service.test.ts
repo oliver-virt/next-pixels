@@ -88,6 +88,16 @@ describe("sendTikTokServerEvent — request payload", () => {
     expect(user.user_agent).toBe("test-agent");
   });
 
+  it("passes ttclid through unhashed when present", async () => {
+    const fetchFn = mockFetch({ code: 0 });
+    await sendTikTokServerEvent({ ...baseEvent, ttclid: "click-id-123" });
+    const user = JSON.parse(
+      (fetchFn.mock.calls[0][1] as RequestInit).body as string
+    ).data[0].user;
+
+    expect(user.ttclid).toBe("click-id-123");
+  });
+
   it("maps products to contents and carries value/currency + page.url", async () => {
     const fetchFn = mockFetch({ code: 0 });
     await sendTikTokServerEvent(baseEvent);

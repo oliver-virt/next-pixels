@@ -395,3 +395,38 @@ In development (`NODE_ENV=development`):
 ## License
 
 MIT
+
+## First-touch attribution (`next-pixels/attribution`)
+
+Client-side analytics only run after cookie consent, and OAuth redirects
+(Google/Apple/Facebook sign-in) rewrite the referrer — so a visitor's true
+origin is routinely lost. The attribution module pins it on the very first
+request instead:
+
+```ts
+// proxy.ts / middleware.ts
+import { seedAttributionCookie } from "next-pixels/attribution";
+
+export async function proxy(request: NextRequest) {
+  const response = NextResponse.next();
+  seedAttributionCookie(request, response); // first touch wins, no PII
+  return response;
+}
+```
+
+What you get:
+
+- `px_attr` first-party cookie with utm tags, click ids (`ttclid`/`fbclid`/`gclid`),
+  real referrer host, and landing path — pinned before consent and before any
+  OAuth bounce. Auth domains (`accounts.google.com`, …) are never recorded as a source.
+- `eventsHandler` automatically backfills `ttclid` and synthesizes `fbc` from the
+  cookie, so Meta + TikTok match server conversions to ad clicks days after the click.
+- `readAttribution(request)` + `attributionProperties(attr)` to attach
+  `first_touch_*` properties to your own analytics events:
+
+```ts
+import { readAttribution, attributionProperties } from "next-pixels/attribution";
+
+const attr = readAttribution(request);
+posthog.capture({ event: "lead", properties: { ...attributionProperties(attr) } });
+```
