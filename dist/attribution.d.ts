@@ -29,10 +29,23 @@ export interface Attribution {
     ttclid?: string;
     fbclid?: string;
     gclid?: string;
+    /** Google Ads click id on iOS app-to-web clicks, sent instead of gclid. */
+    gbraid?: string;
+    /** Google Ads click id on iOS web-to-app clicks, sent instead of gclid. */
+    wbraid?: string;
     referrer_host?: string;
     landing_path?: string;
     /** ISO timestamp of the first touch */
     ts?: string;
+}
+export interface SeedOptions {
+    now?: Date;
+    /**
+     * Also pin visits with no utm, click id or referrer (typed URLs, in-app
+     * browsers that strip the referrer), as a landing page only. A later
+     * tagged visit still replaces it; a tagged first touch is never replaced.
+     */
+    captureDirect?: boolean;
 }
 /**
  * True when the URL carries any param that can pin a first touch. Use in
@@ -45,6 +58,10 @@ export declare function buildAttribution(url: URL, referrer: string | null, now?
 /** True when the request carried any signal worth pinning as first touch. */
 export declare function hasAttributionSignal(attr: Attribution): boolean;
 export declare function serializeAttribution(attr: Attribution): string;
+/**
+ * The cookie is readable and writable by the browser, so a read keeps only
+ * known fields holding non-empty strings, capped to their length.
+ */
 export declare function parseAttribution(raw: string | undefined): Attribution | null;
 /** Read the pinned first touch off an incoming request, if any. */
 export declare function readAttribution(request: {
@@ -72,9 +89,11 @@ interface CookieSettable {
     };
 }
 /**
- * Pin first-touch attribution from a proxy/middleware. First touch wins —
- * an existing cookie is never overwritten; plain direct hits set nothing so
- * a later tagged visit can still claim the first touch.
+ * Pin first-touch attribution from a proxy/middleware. The first tagged
+ * touch (utm, click id or outside referrer) wins and is never overwritten.
+ * Plain direct hits set nothing unless `captureDirect` is on; a direct
+ * record is then replaced by the first tagged touch. A cookie that cannot be
+ * read back counts as absent, so it never blocks the next real touch.
  *
  * @example
  * ```ts
@@ -83,6 +102,6 @@ interface CookieSettable {
  * return response;
  * ```
  */
-export declare function seedAttributionCookie(request: NextRequest, response: CookieSettable, now?: Date): void;
+export declare function seedAttributionCookie(request: NextRequest, response: CookieSettable, options?: Date | SeedOptions): void;
 export {};
 //# sourceMappingURL=attribution.d.ts.map

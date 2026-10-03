@@ -416,9 +416,19 @@ export async function proxy(request: NextRequest) {
 
 What you get:
 
-- `px_attr` first-party cookie with utm tags, click ids (`ttclid`/`fbclid`/`gclid`),
-  real referrer host, and landing path — pinned before consent and before any
-  OAuth bounce. Auth domains (`accounts.google.com`, …) are never recorded as a source.
+- `px_attr` first-party cookie with utm tags, click ids (`ttclid`/`fbclid`/`gclid`,
+  plus Google's iOS `gbraid`/`wbraid`), real referrer host, and landing path —
+  pinned before consent and before any OAuth bounce. Auth domains
+  (`accounts.google.com`, …) and your own site (`www.` and parent/child
+  subdomains) are never recorded as a source.
+- The cookie is browser-writable, so reads keep only known string fields,
+  length-capped. A cookie that cannot be read back never blocks the next touch.
+- Optional `captureDirect`: also pin typed-URL and in-app-browser visits (no
+  referrer) as a landing page. The first tagged visit still replaces it:
+
+  ```ts
+  seedAttributionCookie(request, response, { captureDirect: true });
+  ```
 - `eventsHandler` automatically backfills `ttclid` and synthesizes `fbc` from the
   cookie, so Meta + TikTok match server conversions to ad clicks days after the click.
 - `readAttribution(request)` + `attributionProperties(attr)` to attach
