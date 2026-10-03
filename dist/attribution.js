@@ -32,7 +32,30 @@ const UTM_KEYS = [
     "utm_content",
     "utm_term",
 ];
-const CLICK_ID_KEYS = ["ttclid", "fbclid", "gclid"];
+const CLICK_ID_KEYS = ["ttclid", "fbclid", "gclid", "gbraid", "wbraid"];
+/** Every field the cookie may hold, with its length cap. Anything else read back is dropped. */
+const FIELD_LIMITS = {
+    utm_source: 200,
+    utm_medium: 200,
+    utm_campaign: 200,
+    utm_content: 200,
+    utm_term: 200,
+    ttclid: 500,
+    fbclid: 500,
+    gclid: 500,
+    gbraid: 500,
+    wbraid: 500,
+    referrer_host: 253,
+    landing_path: 200,
+    ts: 40,
+};
+const withoutWww = (host) => host.replace(/^www\./, "");
+/** Same site, www-insensitive, including parent/child subdomains. Sibling subdomains are not matched. */
+function isOwnHost(referrerHost, currentHost) {
+    const a = withoutWww(referrerHost);
+    const b = withoutWww(currentHost);
+    return a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
+}
 /**
  * True when the URL carries any param that can pin a first touch. Use in
  * proxy matchers that would otherwise skip cacheable routes — per-click URLs
@@ -59,7 +82,7 @@ export function buildAttribution(url, referrer, now = new Date()) {
         try {
             const host = new URL(referrer).hostname;
             // Own host (internal nav) and auth plumbing are not origins.
-            if (host && host !== url.hostname && !MASKING_REFERRER_HOSTS.has(host)) {
+            if (host && !isOwnHost(host, url.hostname) && !MASKING_REFERRER_HOSTS.has(host)) {
                 attr.referrer_host = host;
             }
         }
@@ -73,21 +96,34 @@ export function buildAttribution(url, referrer, now = new Date()) {
 }
 /** True when the request carried any signal worth pinning as first touch. */
 export function hasAttributionSignal(attr) {
-    return Boolean(attr.utm_source || attr.ttclid || attr.fbclid || attr.gclid || attr.referrer_host);
+    return Boolean(attr.utm_source || CLICK_ID_KEYS.some((k) => attr[k]) || attr.referrer_host);
 }
 export function serializeAttribution(attr) {
     return encodeURIComponent(JSON.stringify(attr));
 }
+/**
+ * The cookie is readable and writable by the browser, so a read keeps only
+ * known fields holding non-empty strings, capped to their length.
+ */
 export function parseAttribution(raw) {
     if (!raw)
         return null;
+    let parsed;
     try {
-        const parsed = JSON.parse(decodeURIComponent(raw));
-        return typeof parsed === "object" && parsed !== null ? parsed : null;
+        parsed = JSON.parse(decodeURIComponent(raw));
     }
     catch {
         return null;
     }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+        return null;
+    const out = {};
+    for (const [key, limit] of Object.entries(FIELD_LIMITS)) {
+        const value = parsed[key];
+        if (typeof value === "string" && value)
+            out[key] = value.slice(0, limit);
+    }
+    return Object.keys(out).length > 0 ? out : null;
 }
 /** Read the pinned first touch off an incoming request, if any. */
 export function readAttribution(request) {
@@ -108,9 +144,11 @@ export function attributionProperties(attr) {
     return out;
 }
 /**
- * Pin first-touch attribution from a proxy/middleware. First touch wins —
- * an existing cookie is never overwritten; plain direct hits set nothing so
- * a later tagged visit can still claim the first touch.
+ * Pin first-touch attribution from a proxy/middleware. The first tagged
+ * touch (utm, click id or outside referrer) wins and is never overwritten.
+ * Plain direct hits set nothing unless `captureDirect` is on; a direct
+ * record is then replaced by the first tagged touch. A cookie that cannot be
+ * read back counts as absent, so it never blocks the next real touch.
  *
  * @example
  * ```ts
@@ -119,11 +157,14 @@ export function attributionProperties(attr) {
  * return response;
  * ```
  */
-export function seedAttributionCookie(request, response, now = new Date()) {
-    if (request.cookies.get(ATTRIBUTION_COOKIE))
+export function seedAttributionCookie(request, response, options = {}) {
+    const { now = new Date(), captureDirect = false } = options instanceof Date ? { now: options } : options;
+    const existing = readAttribution(request);
+    if (existing && hasAttributionSignal(existing))
         return;
     const attr = buildAttribution(request.nextUrl, request.headers.get("referer"), now);
-    if (!hasAttributionSignal(attr))
+    const tagged = hasAttributionSignal(attr);
+    if (!tagged && (existing || !captureDirect))
         return;
     response.cookies.set(ATTRIBUTION_COOKIE, serializeAttribution(attr), {
         maxAge: ATTRIBUTION_MAX_AGE,
